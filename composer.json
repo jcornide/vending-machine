@@ -1,0 +1,18 @@
+{
+    "name": "jcornide/vending-machine",
+    "description": "Vending machine",
+    "type": "project",
+    "license": "public",
+    "require": {
+        "php": "^8.0",
+        "symfony/console": "^5.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    }
+}
