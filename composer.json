@@ -4,7 +4,7 @@
     "type": "project",
     "license": "public",
     "require": {
-        "php": "^8.0",
+        "php": "^7.4",
         "symfony/console": "^5.2"
     },
     "autoload": {
