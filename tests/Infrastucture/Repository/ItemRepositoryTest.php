@@ -14,5 +14,23 @@ class ItemRepositoryTest extends TestCase
         $repository = new ItemRepository();
         $this->assertIsArray($repository->findAll());
     }
+
+    /** @test */
+    public function addingStockToItemShouldIncreaseStockOfTheItem()
+    {
+        $repository = new ItemRepository();
+
+        $items = $repository->findAll();
+        $firstItem = $items[0];
+
+        $this->assertEquals(0, $firstItem['stock']);
+        $repository->changeStock($items[0]['name'], 3);
+
+        $items = $repository->findAll();
+        $firstItem = $items[0];
+
+        $this->assertEquals(3, $firstItem['stock']);
+
+    }
 }
 
