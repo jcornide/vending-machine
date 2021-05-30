@@ -2,8 +2,8 @@
 
 ## To run the app
 
-1. Install dependencies
 ```
-docker run --rm --interactive --tty --volume $PWD:/app composer install --ignore-platform-reqs --no-scripts
+docker build .
+docker exec -it  vending-machine_php_1 sh /usr/src/app/start.sh
 ```
 
