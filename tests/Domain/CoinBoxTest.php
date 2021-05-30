@@ -90,4 +90,35 @@ class CoinBoxTest extends TestCase
 
         $this->assertEquals(3.65, $coinBox->getTotalAvailable());
     }
+
+    /** @test */
+    public function subtractUserCredit()
+    {
+        $coinBox = new CoinBox();
+        $coinBox
+            ->addCoin('0.25', 2)
+            ->addCoin('0.10', 2)
+            ->addUserCoin('1', 1);
+
+        $this->assertEquals(1.70, $coinBox->getTotalAvailable());
+        $coinBox->chargeUser(0.65);
+        $coinBox->refund(0.35);
+        $this->assertEquals(0, $coinBox->getAvailableCredit());
+        $this->assertEquals(1.35, $coinBox->getTotalAvailable());
+    }
+
+    /** @test */
+    public function isChangeAvailable()
+    {
+        $coinBox = new CoinBox();
+        $coinBox
+            ->addCoin('0.25', 2)
+            ->addCoin('0.10', 2);
+
+        $this->assertFalse($coinBox->isChangeAvailable(1));
+        $this->assertTrue($coinBox->isChangeAvailable(0.50));
+        $this->assertTrue($coinBox->isChangeAvailable(0.35));
+        $this->assertTrue($coinBox->isChangeAvailable(0.60));
+        $this->assertTrue($coinBox->isChangeAvailable(0));
+    }
 }

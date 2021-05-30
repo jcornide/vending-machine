@@ -14,5 +14,15 @@ interface CoinBoxInterface
 
     public function getAvailableCredit(): float;
 
-    public function refund(float $amount): ?array;
+    public function refund(float $subtract): ?array;
+
+    public function chargeUser(float $amount): self;
+
+    public static function getAvailableCoinValues(): array;
+
+    public static function getAvailableCoinsForDisplay(): array;
+
+    public function getCoinsForRefund(float $amount): ?array;
+
+    public function isChangeAvailable(float $amount): bool;
 }

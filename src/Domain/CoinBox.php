@@ -6,26 +6,37 @@ namespace App\Domain;
 final class CoinBox implements CoinBoxInterface
 {
     private const AVAILABLE_COIN_VALUES = ['0.05', '0.10', '0.25', '1'];
+    const COIN_SYMBOL = "€";
 
-    private $coins = [];
+    private array $coins = [];
 
-    private $userCoins = [];
+    private float $userCredit = 0;
 
     public function __construct()
     {
         foreach (self::AVAILABLE_COIN_VALUES as $type) {
             $this->coins[$type] = 0;
-            $this->userCoins[$type] = 0;
         }
     }
 
     public function addCoin(string $coinValue, int $quantity = 1): self
     {
+        $coinValue = trim(str_replace(self::COIN_SYMBOL, '', $coinValue));
         if (!in_array($coinValue, self::AVAILABLE_COIN_VALUES)) {
             throw new InvalidCoinException("$coinValue is not a valid coin, valid coins are " . implode(', ', self::AVAILABLE_COIN_VALUES));
         }
         $this->coins[$coinValue] = $this->coins[$coinValue] + $quantity;
         return $this;
+    }
+
+    public static function getAvailableCoinValues(): array
+    {
+        return self::AVAILABLE_COIN_VALUES;
+    }
+
+    public static function getAvailableCoinsForDisplay(): array
+    {
+        return preg_filter('/$/', " " . self::COIN_SYMBOL, self::AVAILABLE_COIN_VALUES);
     }
 
     public function getTotalAvailable(): float
@@ -39,62 +50,77 @@ final class CoinBox implements CoinBoxInterface
 
     public function refundUserCredit(): array
     {
-        $availableUserCoins = $this->userCoins;
-        $this->subtractCoins($this->userCoins);
-        $this->userCoins = [];
-        return $availableUserCoins;
+        return $this->refund($this->userCredit);
     }
 
-
+    public function getCoins(): array
+    {
+        return $this->coins;
+    }
 
     public function addUserCoin(string $coinValue, int $quantity = 1): self
     {
-        if (!in_array($coinValue, self::AVAILABLE_COIN_VALUES)) {
-            throw new InvalidCoinException("$coinValue is not a valid coin, valid coins are " . implode(', ', self::AVAILABLE_COIN_VALUES));
-        }
-        $this->userCoins[$coinValue] = $this->userCoins[$coinValue] + $quantity;
         $this->addCoin($coinValue, $quantity);
+        $this->userCredit += $coinValue * $quantity;
         return $this;
     }
 
     public function getAvailableCredit(): float
     {
-        $total = 0;
-        foreach ($this->userCoins as $coinValue => $quantity) {
-            $total = $total + ((float) $coinValue * $quantity);
+        return $this->userCredit;
+    }
+
+    public function chargeUser(float $amount): self
+    {
+        if ($amount > $this->userCredit) {
+            throw new \InvalidArgumentException("The user can not be charged $amount, it only has $this->userCredit");
         }
-        return $total;
+        $this->userCredit -= $amount;
+        return $this;
     }
 
     public function refund(float $amount): ?array
+    {
+        $coins = $this->getCoinsForRefund($amount);
+        if (is_array($coins)) {
+            $this->subtractCoins($coins);
+            $this->userCredit -= $amount;
+            return $coins;
+        }
+
+        return null;
+    }
+
+    public function getCoinsForRefund(float $amount): ?array
     {
         $sortedCoinValues = self::AVAILABLE_COIN_VALUES;
         ksort($sortedCoinValues, SORT_NUMERIC);
         $sortedCoinValues = array_reverse($sortedCoinValues);
 
         $coins = [];
+        $subtract = $amount;
         foreach($sortedCoinValues as $coinValue) {
-            if( $this->coins[$coinValue] > 0 && $coinValue <= $amount ) {
-                if ( $amount / $coinValue > $this->coins[$coinValue] ) {
-                    $amount = $amount - $coinValue * $this->coins[$coinValue];
+            if( $this->coins[$coinValue] > 0 && $coinValue <= $subtract ) {
+                if ( $subtract / $coinValue > $this->coins[$coinValue] ) {
+                    $subtract = $subtract - $coinValue * $this->coins[$coinValue];
                     $coins[$coinValue] = $this->coins[$coinValue];
-                } elseif ($amount == $coinValue) {
-                    $amount = $amount - $coinValue;
+                } elseif ($subtract == $coinValue) {
+                    $subtract = $subtract - $coinValue;
                     $coins[$coinValue] = 1;
                 } else {
-                    $coins[$coinValue] = floor($amount / $coinValue);
-                    $amount = $amount - ($coinValue * floor($amount / $coinValue));
+                    $coins[$coinValue] = floor($subtract / $coinValue);
+                    $subtract = $subtract - ($coinValue * floor($subtract / $coinValue));
                 }
             }
-            $amount = round($amount, 2);
+            $subtract = round($subtract, 2);
         }
 
-        if ($amount == 0) {
-            $this->subtractCoins($coins);
-            return $coins;
-        }
+        return $subtract == 0 ? $coins : null;
+    }
 
-        return null;
+    public function isChangeAvailable(float $amount): bool
+    {
+        return is_array($this->getCoinsForRefund($amount));
     }
 
     private function subtractCoins(array $coins): self
