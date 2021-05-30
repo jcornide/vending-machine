@@ -16,5 +16,3 @@ WORKDIR /usr/src/app
 COPY . /usr/src/app
 
 RUN composer install --ignore-platform-reqs
-
-RUN ./start.sh
